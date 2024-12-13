@@ -1,0 +1,264 @@
+1. Simple Update
+This is the most basic form of an UPDATE statement where a specific value is updated in a column.
+
+Example:
+sql
+Copy code
+UPDATE Employees
+SET Salary = 50000
+WHERE EmployeeID = 101;
+Scenario: Update the salary of a specific employee identified by EmployeeID.
+Impact: Only the row where EmployeeID = 101 will be updated.
+2. Update Multiple Columns
+You can update more than one column at a time.
+
+Example:
+sql
+Copy code
+UPDATE Employees
+SET Salary = 60000, JobTitle = 'Manager'
+WHERE EmployeeID = 102;
+Scenario: Update both the Salary and JobTitle of the employee with EmployeeID = 102.
+Impact: Only the specified columns in the specified row will be updated.
+3. Update All Rows
+Without a WHERE clause, the UPDATE statement will apply to all rows.
+
+Example:
+sql
+Copy code
+UPDATE Products
+SET Price = Price * 1.10;
+Scenario: Increase the price of all products by 10%.
+Impact: Every row in the Products table will have its Price updated.
+4. Conditional Update Using CASE
+You can use CASE for conditional updates within a single query.
+
+Example:
+sql
+Copy code
+UPDATE Employees
+SET Bonus = CASE
+    WHEN JobTitle = 'Manager' THEN 1000
+    WHEN JobTitle = 'Developer' THEN 500
+    ELSE 200
+END;
+Scenario: Assign a bonus based on the job title.
+Impact: Updates the Bonus column differently for rows based on their JobTitle.
+5. Update Using a Subquery
+You can update rows based on a value from another table.
+
+Example:
+sql
+Copy code
+UPDATE Employees
+SET Department = (
+    SELECT DepartmentName
+    FROM Departments
+    WHERE Employees.DepartmentID = Departments.DepartmentID
+);
+Scenario: Update the Department name in the Employees table based on data from the Departments table.
+Impact: Uses a subquery to fetch the corresponding department name.
+6. Update With Joins
+You can join tables in an UPDATE query for more complex scenarios.
+
+Example:
+sql
+Copy code
+UPDATE Orders
+SET Orders.Status = 'Shipped'
+FROM Orders
+INNER JOIN Shipments ON Orders.OrderID = Shipments.OrderID
+WHERE Shipments.ShipmentDate IS NOT NULL;
+Scenario: Update the status of orders to Shipped if they have a corresponding shipment date.
+Impact: Uses a join to match data across tables for the update.
+7. Update Using Stored Procedures
+Stored procedures allow you to encapsulate update logic for reuse and parameterization.
+
+Example Stored Procedure:
+sql
+Copy code
+CREATE PROCEDURE UpdateEmployeeSalary
+    @EmployeeID INT,
+    @NewSalary DECIMAL(10, 2)
+AS
+BEGIN
+    UPDATE Employees
+    SET Salary = @NewSalary
+    WHERE EmployeeID = @EmployeeID;
+END;
+Example Execution:
+sql
+Copy code
+EXEC UpdateEmployeeSalary @EmployeeID = 103, @NewSalary = 70000;
+Scenario: Dynamically update an employee's salary using parameters.
+Impact: Simplifies update operations for repeated use and enforces controlled updates.
+8. Update Using Functions
+You can use functions to calculate or fetch data dynamically during an update.
+
+Example of Using a Scalar Function:
+Function Definition:
+sql
+Copy code
+CREATE FUNCTION CalculateTax (@Salary DECIMAL(10, 2))
+RETURNS DECIMAL(10, 2)
+AS
+BEGIN
+    RETURN @Salary * 0.10; -- Assume 10% tax
+END;
+Update Query:
+sql
+Copy code
+UPDATE Employees
+SET Tax = dbo.CalculateTax(Salary);
+Scenario: Dynamically calculate tax for each employee's salary using a function.
+Impact: Updates the Tax column by applying a custom calculation to every row.
+9. Logging Updates Using Triggers
+You can log changes made by UPDATE using triggers.
+
+Example Trigger:
+sql
+Copy code
+CREATE TRIGGER LogSalaryChanges
+ON Employees
+AFTER UPDATE
+AS
+BEGIN
+    INSERT INTO SalaryChangeLog (EmployeeID, OldSalary, NewSalary, ChangeDate)
+    SELECT
+        i.EmployeeID,
+        d.Salary AS OldSalary,
+        i.Salary AS NewSalary,
+        GETDATE() AS ChangeDate
+    FROM Inserted i
+    INNER JOIN Deleted d ON i.EmployeeID = d.EmployeeID;
+END;
+Scenario: Automatically log salary changes into a SalaryChangeLog table whenever an update occurs.
+Impact: Ensures an audit trail for updates.
+10. Dynamic Updates
+Use dynamic SQL for updates when table or column names are variable.
+
+Example:
+sql
+Copy code
+DECLARE @ColumnName NVARCHAR(50) = 'City';
+DECLARE @NewValue NVARCHAR(50) = 'Delhi';
+DECLARE @Condition NVARCHAR(50) = 'New Delhi';
+DECLARE @SQL NVARCHAR(MAX);
+
+SET @SQL = N'UPDATE Employees SET ' + @ColumnName + N' = @NewValue WHERE ' + @ColumnName + N' = @Condition';
+EXEC sp_executesql @SQL, N'@NewValue NVARCHAR(50), @Condition NVARCHAR(50)', @NewValue, @Condition;
+Scenario: Dynamically update a column based on parameters.
+Impact: Adds flexibility for dynamic table or column names.
+
+Dynamic updates in SQL are useful when you need to construct and execute SQL statements dynamically at runtime, such as when the column name, table name, or condition is not known beforehand and is provided as a variable.
+This is typically achieved using dynamic SQL, often with sp_executesql in SQL Server or similar mechanisms in other databases.
+
+How Dynamic Update Works:
+A dynamic update allows you to:
+
+Use Variables for Table Names, Column Names, or Conditions.
+Construct SQL Strings Dynamically at runtime.
+Execute those constructed queries safely, often using parameterized queries to avoid SQL injection.
+Example Scenario:
+Suppose you need to update a column in a table, but both the column name and the condition depend on user input or variables at runtime. For instance:
+
+Update the column specified by a variable (@ColumnName).
+Apply the condition specified by a variable (@Condition).
+SQL Server Example
+1. Query Construction
+sql
+Copy code
+DECLARE @TableName NVARCHAR(50) = 'Employees';
+DECLARE @ColumnName NVARCHAR(50) = 'City';
+DECLARE @NewValue NVARCHAR(50) = 'Delhi';
+DECLARE @ConditionColumn NVARCHAR(50) = 'City';
+DECLARE @ConditionValue NVARCHAR(50) = 'New Delhi';
+DECLARE @SQL NVARCHAR(MAX);
+
+-- Build the dynamic SQL string
+SET @SQL = N'UPDATE ' + QUOTENAME(@TableName) + 
+           N' SET ' + QUOTENAME(@ColumnName) + N' = @NewValue ' +
+           N' WHERE ' + QUOTENAME(@ConditionColumn) + N' = @ConditionValue';
+
+-- Execute the dynamic query with parameterization
+EXEC sp_executesql @SQL, 
+                   N'@NewValue NVARCHAR(50), @ConditionValue NVARCHAR(50)', 
+                   @NewValue, @ConditionValue;
+2. Explanation
+Input Variables:
+
+@TableName: The name of the table where the update will be performed (Employees).
+@ColumnName: The column to be updated (City).
+@NewValue: The new value to assign (Delhi).
+@ConditionColumn: The column used for the condition (City).
+@ConditionValue: The value used in the condition (New Delhi).
+Dynamic SQL Construction:
+
+The query is built as a string using SET @SQL.
+QUOTENAME() is used to safely handle table and column names, preventing errors from special characters or reserved keywords.
+The query string ends up being:
+sql
+Copy code
+UPDATE [Employees] 
+SET [City] = @NewValue 
+WHERE [City] = @ConditionValue
+Execution with sp_executesql:
+
+sp_executesql is used to execute the dynamic SQL string.
+Parameters (@NewValue and @ConditionValue) are passed separately to avoid SQL injection and improve performance.
+Advantages of Dynamic Updates
+Flexibility:
+
+You can dynamically determine table names, column names, and conditions based on runtime inputs.
+Parameterized Execution:
+
+Using sp_executesql with parameters ensures safety and avoids SQL injection risks.
+Reusable Logic:
+
+Dynamic updates can be part of stored procedures, making your logic reusable and adaptable for different tables and conditions.
+Real-World Use Case
+Problem:
+You have multiple tables (Employees, Departments, Products), and you need a generalized procedure to update any table dynamically based on user input.
+
+Solution: Stored Procedure
+sql
+Copy code
+CREATE PROCEDURE DynamicUpdate
+    @TableName NVARCHAR(50),
+    @ColumnName NVARCHAR(50),
+    @NewValue NVARCHAR(50),
+    @ConditionColumn NVARCHAR(50),
+    @ConditionValue NVARCHAR(50)
+AS
+BEGIN
+    DECLARE @SQL NVARCHAR(MAX);
+
+    SET @SQL = N'UPDATE ' + QUOTENAME(@TableName) + 
+               N' SET ' + QUOTENAME(@ColumnName) + N' = @NewValue ' +
+               N' WHERE ' + QUOTENAME(@ConditionColumn) + N' = @ConditionValue';
+
+    EXEC sp_executesql @SQL, 
+                       N'@NewValue NVARCHAR(50), @ConditionValue NVARCHAR(50)', 
+                       @NewValue, @ConditionValue;
+END;
+Execution Example:
+sql
+Copy code
+EXEC DynamicUpdate 
+     @TableName = 'Employees', 
+     @ColumnName = 'City', 
+     @NewValue = 'Delhi', 
+     @ConditionColumn = 'City', 
+     @ConditionValue = 'New Delhi';
+Risks and Precautions
+SQL Injection:
+
+Always use sp_executesql with parameters instead of concatenating raw input directly into the query string.
+Avoid accepting arbitrary table or column names from untrusted sources.
+Performance Overhead:
+
+Dynamic SQL might slightly affect performance compared to static SQL because the query plan may not be reused.
+Error Handling:
+
+If table or column names are misspelled or do not exist, the query will fail. Implement validation before constructing the SQL.
+Dynamic updates are powerful and flexible but require careful handling to ensure safety, maintainability, and performance. 

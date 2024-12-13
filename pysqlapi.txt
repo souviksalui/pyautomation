@@ -1,0 +1,5 @@
+https://stackoverflow.com/questions/34322471/sqlalchemy-engine-connection-and-session-difference
+
+https://www.youtube.com/watch?v=D3aXA9gcMW4
+
+https://www.youtube.com/watch?v=hzcV0hDkfzs
